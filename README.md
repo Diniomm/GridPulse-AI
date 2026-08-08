@@ -43,11 +43,10 @@ gridpulse/
 
 The detailed phase plan and review gates live in [docs/roadmap.md](docs/roadmap.md).
 
-Initial verification:
+Initial verification (dependency-free smoke and domain tests):
 
 ```bash
-python -m pytest
+python -m unittest discover -s tests -v
 ```
 
 Secrets belong in `.env` or the deployment platform's secret manager. Never commit live API keys.
-
