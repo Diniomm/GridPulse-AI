@@ -67,3 +67,19 @@ streamlit run app.py
 ```
 
 Secrets belong in `.env` or the deployment platform's secret manager. Never commit live API keys.
+
+## Deploy and demo
+
+The app is ready for a zero-cost Streamlit Community Cloud deployment. Follow
+the [deployment guide](docs/deployment.md), then use the three demo scenarios
+to show hazard correlation, cited manual retrieval, multimodal evidence, and
+human approval gating. The latest deterministic quality results are in
+[evaluation-report.md](evaluation-report.md).
+
+### Portfolio talking points
+
+- Typed incident domain and bounded, auditable investigation workflow
+- Hybrid RAG with page-level citations and offline deterministic fallback
+- Multimodal image/audio adapters with safe provider failure behavior
+- Evaluation gates for retrieval, abstention, prompt injection, contradictions, and review trajectory
+- CI checks that run without paid APIs or hosted infrastructure
