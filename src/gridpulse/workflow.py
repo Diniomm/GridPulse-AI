@@ -140,7 +140,17 @@ class InvestigationWorkflow:
             + [match.event.title for match in state.hazard_matches]
         ).lower()
         evidence_ids = tuple(evidence.evidence_id for evidence in state.evidence)
-        if ("crossarm" in text or "pole" in text) and "wind" in text:
+        if _contains_contradictory_damage_claim(text):
+            state.hypotheses.append(
+                Hypothesis(
+                    cause="conflicting field evidence",
+                    status=HypothesisStatus.INSUFFICIENT_EVIDENCE,
+                    confidence=0.1,
+                    supporting_evidence_ids=evidence_ids,
+                    rationale="Conflicting condition reports require human verification before cause ranking.",
+                )
+            )
+        elif ("crossarm" in text or "pole" in text) and "wind" in text:
             state.hypotheses.append(
                 Hypothesis(
                     cause="wind-induced pole or crossarm damage",
@@ -220,3 +230,15 @@ def _evidence_from_retrieval(result: RetrievedEvidence) -> Evidence:
         relevance_score=result.score,
     )
 
+
+def _contains_contradictory_damage_claim(text: str) -> bool:
+    """Detect a denial of damage alongside a damage claim in untrusted text."""
+
+    denial_terms = ("intact", "undamaged", "no damage", "no visible damage", "undisturbed")
+    damage_terms = ("damage", "damaged", "broken", "fractured", "split")
+    conflict_markers = (" but ", " however ", "another note claims", "conflicting", "contradict")
+    return (
+        any(term in text for term in denial_terms)
+        and any(term in text for term in damage_terms)
+        and any(marker in text for marker in conflict_markers)
+    )

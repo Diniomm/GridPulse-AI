@@ -1,0 +1,22 @@
+name: GridPulse quality gates
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-and-evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run unit tests
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+      - name: Run deterministic AI evaluation
+        run: python -m gridpulse.evaluation --report evaluation-report.md
+        env:
+          PYTHONPATH: src
+      - name: Check generated report
+        run: test -s evaluation-report.md

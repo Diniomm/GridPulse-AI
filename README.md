@@ -49,6 +49,16 @@ Initial verification (dependency-free smoke and domain tests):
 python -m unittest discover -s tests -v
 ```
 
+Deterministic AI quality and safety evaluation (also runs in CI):
+
+```bash
+PYTHONPATH=src python -m gridpulse.evaluation --report evaluation-report.md
+```
+
+The evaluation uses local fixtures and does not require API keys. It measures
+retrieval recall, citation coverage, human-review enforcement, abstention,
+prompt-injection resilience, and contradictory-evidence handling.
+
 Optional dashboard:
 
 ```bash
