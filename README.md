@@ -41,7 +41,7 @@ gridpulse/
 
 ## Development
 
-The detailed phase plan and review gates live in [docs/roadmap.md](docs/roadmap.md).
+The repository contains focused documentation for evaluation, safety, and deployment in the `docs/` directory.
 
 Initial verification (dependency-free smoke and domain tests):
 
