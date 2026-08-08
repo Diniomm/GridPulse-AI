@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tempfile
+import uuid
 from pathlib import Path
 
 
@@ -15,6 +17,10 @@ if str(SRC_ROOT) not in sys.path:
 
 from gridpulse.demo import build_demo_workflow, demo_incident_options  # noqa: E402
 from gridpulse.intake import build_custom_incident  # noqa: E402
+from gridpulse.storage import SQLiteIncidentRepository  # noqa: E402
+
+
+LOCAL_REPOSITORY = SQLiteIncidentRepository(PROJECT_ROOT / "data" / "gridpulse.db")
 
 
 def _badge(st, label: str, tone: str = "neutral") -> None:
@@ -26,15 +32,129 @@ def _badge(st, label: str, tone: str = "neutral") -> None:
     )
 
 
-def _save_upload(upload) -> str | None:
-    """Save a Streamlit upload to a temporary path for provider adapters."""
+def _safe_filename(value: str) -> str:
+    normalized = re.sub(r"[^A-Za-z0-9]+", "-", value.strip()).strip("-").lower()
+    return normalized or "incident"
+
+
+def _save_upload(
+    upload,
+    *,
+    persist: bool = False,
+    incident_id: str | None = None,
+    file_prefix: str | None = None,
+) -> str | None:
+    """Save an upload for provider adapters and optionally retain it for history."""
 
     if upload is None:
         return None
     suffix = Path(upload.name).suffix or ".bin"
+    if persist and incident_id:
+        upload_dir = PROJECT_ROOT / "data" / "uploads"
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        prefix = _safe_filename(file_prefix or incident_id)
+        destination = upload_dir / f"{prefix}-{uuid.uuid4().hex[:8]}{suffix}"
+        destination.write_bytes(upload.getvalue())
+        return str(destination)
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix="gridpulse-") as handle:
         handle.write(upload.getvalue())
         return handle.name
+
+
+def _report_snapshot(
+    result,
+    *,
+    image_path: str | None = None,
+    audio_path: str | None = None,
+) -> dict[str, object]:
+    """Add the rendered investigation sections to the persisted report payload."""
+
+    snapshot = dict(result.state.report)
+    snapshot["observations"] = [
+        {
+            "type": observation.observation_type.value,
+            "value": observation.value,
+            "confidence": observation.confidence,
+            "source": observation.source,
+        }
+        for observation in result.state.observations
+    ]
+    snapshot["evidence"] = [
+        {
+            "title": evidence.title,
+            "source_uri": evidence.source_uri,
+            "source_page": evidence.source_page,
+            "relevance_score": evidence.relevance_score,
+        }
+        for evidence in result.state.evidence
+    ]
+    snapshot["hypotheses"] = [
+        {
+            "cause": hypothesis.cause,
+            "status": hypothesis.status.value,
+            "confidence": hypothesis.confidence,
+            "rationale": hypothesis.rationale,
+        }
+        for hypothesis in result.state.hypotheses
+    ]
+    snapshot["image_path"] = image_path
+    snapshot["audio_path"] = audio_path
+    return snapshot
+
+
+def _open_saved_report_dialog(st, saved_report) -> None:
+    """Display a persisted report in a full review dialog."""
+
+    @st.dialog("Saved incident report", width="large")
+    def show_report() -> None:
+        report = saved_report.report
+        st.caption(
+            f"{saved_report.incident_title} | Incident {saved_report.incident_id} | "
+            f"Saved {saved_report.updated_at}"
+        )
+        _badge(st, saved_report.status, "success" if saved_report.status == "approved" else "warning")
+        st.subheader("Recommendation")
+        st.write(report.get("recommendation", "No recommendation recorded."))
+
+        image_path = report.get("image_path")
+        if image_path and Path(str(image_path)).exists():
+            st.image(str(image_path), caption="Saved field photograph", use_container_width=True)
+
+        observations, evidence = st.columns(2)
+        with observations:
+            st.markdown("#### Observations")
+            for observation in report.get("observations", []):
+                with st.container(border=True):
+                    st.markdown(f"**{str(observation.get('type', 'Observation')).title()}**")
+                    st.write(observation.get("value", ""))
+                    st.caption(
+                        f"Confidence: {float(observation.get('confidence', 0)):.0%} | "
+                        f"Source: {Path(str(observation.get('source', ''))).name}"
+                    )
+        with evidence:
+            st.markdown("#### Evidence and citations")
+            for item in report.get("evidence", []):
+                with st.container(border=True):
+                    page = f" | Page {item.get('source_page')}" if item.get("source_page") else ""
+                    st.markdown(f"**{item.get('title', 'Evidence')}{page}**")
+                    st.caption(str(item.get("source_uri", "")))
+
+        st.markdown("#### Cause hypotheses")
+        for hypothesis in report.get("hypotheses", []):
+            with st.container(border=True):
+                st.markdown(
+                    f"**{hypothesis.get('cause', 'Unresolved')}** - "
+                    f"{hypothesis.get('status', 'unknown')} "
+                    f"({float(hypothesis.get('confidence', 0)):.0%})"
+                )
+                st.write(hypothesis.get("rationale", ""))
+        if saved_report.reviewer_reason:
+            st.markdown("#### Reviewer reason")
+            st.write(saved_report.reviewer_reason)
+        with st.expander("Full structured report"):
+            st.json(report)
+
+    show_report()
 
 
 def _evidence_markup(evidence) -> str:
@@ -129,6 +249,49 @@ def main() -> None:
                     st.error(str(error))
             elif not (custom_title.strip() and custom_description.strip() and custom_asset.strip()):
                 st.caption("Complete the fields above, then submit the form to continue.")
+        with st.expander("Saved report history"):
+            saved_reports = LOCAL_REPOSITORY.list_reports()
+            if not saved_reports:
+                st.caption("No saved reports yet.")
+            else:
+                selected_report_id = st.selectbox(
+                    "View saved report",
+                    [saved.incident_id for saved in saved_reports[:10]],
+                    format_func=lambda report_id: next(
+                        saved.incident_title
+                        for saved in saved_reports
+                        if saved.incident_id == report_id
+                    ),
+                    key="saved_report_selector",
+                )
+                selected_report = next(
+                    saved for saved in saved_reports if saved.incident_id == selected_report_id
+                )
+                st.write(f"**Status:** {selected_report.status}")
+                st.caption(f"Saved: {selected_report.updated_at}")
+                if st.button("Open full report", key="open_saved_report"):
+                    st.session_state["saved_report_to_view"] = selected_report_id
+                confirm_delete = st.checkbox(
+                    "Confirm permanent deletion",
+                    key="confirm_saved_report_delete",
+                )
+                if st.button("Delete saved report", disabled=not confirm_delete):
+                    for key in ("image_path", "audio_path"):
+                        saved_path = selected_report.report.get(key)
+                        if saved_path:
+                            Path(str(saved_path)).unlink(missing_ok=True)
+                    LOCAL_REPOSITORY.delete_report(selected_report.incident_id)
+                    st.session_state.pop("last_persisted_report", None)
+                    st.rerun()
+
+    report_to_view = st.session_state.pop("saved_report_to_view", None)
+    if report_to_view:
+        saved_report = next(
+            (item for item in LOCAL_REPOSITORY.list_reports() if item.incident_id == report_to_view),
+            None,
+        )
+        if saved_report:
+            _open_saved_report_dialog(st, saved_report)
 
     if incident is None:
         st.info("Complete the custom incident fields in the sidebar to view the investigation workspace.")
@@ -162,14 +325,25 @@ def main() -> None:
     loading_slot = right.empty()
     if run:
         workflow = build_demo_workflow()
+        LOCAL_REPOSITORY.save_incident(incident)
         if audio is not None:
-            audio_path = _save_upload(audio)
+            audio_path = _save_upload(
+                audio,
+                persist=True,
+                incident_id=incident.incident_id,
+                file_prefix=incident.title,
+            )
         elif os.getenv("GRIDPULSE_USE_LOCAL_WHISPER", "false").lower() in {"1", "true", "yes"}:
             audio_path = None
         else:
             audio_path = "storm-pole.wav"
         if image is not None:
-            image_path = _save_upload(image)
+            image_path = _save_upload(
+                image,
+                persist=True,
+                incident_id=incident.incident_id,
+                file_prefix=incident.title,
+            )
         elif os.getenv("GRIDPULSE_USE_LOCAL_VISION", "false").lower() in {"1", "true", "yes"}:
             image_path = None
         else:
@@ -183,6 +357,18 @@ def main() -> None:
             progress.progress(100, text="Investigation complete")
         loading_slot.empty()
         st.session_state["last_result"] = result
+        stored_report = _report_snapshot(
+            result,
+            image_path=image_path if image is not None else None,
+            audio_path=audio_path if audio is not None else None,
+        )
+        st.session_state["last_persisted_report"] = stored_report
+        LOCAL_REPOSITORY.save_report(
+            incident.incident_id,
+            incident_title=incident.title,
+            status=result.state.status,
+            report=stored_report,
+        )
 
     result = st.session_state.get("last_result")
     with right:
@@ -209,12 +395,33 @@ def main() -> None:
                     with approval_col:
                         if st.button("Approve report", use_container_width=True):
                             result.approve()
+                            stored_report = dict(
+                                st.session_state.get("last_persisted_report", result.state.report)
+                            )
+                            stored_report.update(result.state.report)
+                            LOCAL_REPOSITORY.save_report(
+                                result.state.incident.incident_id,
+                                incident_title=result.state.incident.title,
+                                status=result.state.status,
+                                report=stored_report,
+                            )
                             st.rerun()
                     with rejection_col:
                         rejection_reason = st.text_input("Rejection reason", key="rejection_reason")
                         if st.button("Reject report", use_container_width=True):
                             if rejection_reason.strip():
                                 result.reject(rejection_reason)
+                                stored_report = dict(
+                                    st.session_state.get("last_persisted_report", result.state.report)
+                                )
+                                stored_report.update(result.state.report)
+                                LOCAL_REPOSITORY.save_report(
+                                    result.state.incident.incident_id,
+                                    incident_title=result.state.incident.title,
+                                    status=result.state.status,
+                                    report=stored_report,
+                                    reviewer_reason=rejection_reason,
+                                )
                                 st.rerun()
                             st.error("A rejection reason is required.")
 

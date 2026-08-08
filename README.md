@@ -91,6 +91,10 @@ The vision model generates a caption for an uploaded field photo. Without the
 optional dependency and environment setting, the application uses its clearly
 labeled deterministic visual fallback.
 
+Local investigations and review decisions are stored in `data/gridpulse.db`
+using SQLite. The database is ignored by Git and is intended for local use;
+hosted deployments need an external database if history must survive restarts.
+
 
 
 ## Deploy and operate
