@@ -1,9 +1,4 @@
-"""Streamlit entrypoint for the zero-cost GridPulse demo.
-
-Run from the repository root with:
-
-    streamlit run app.py
-"""
+"""Streamlit entrypoint for the zero-cost GridPulse demo."""
 
 from __future__ import annotations
 
@@ -19,6 +14,15 @@ if str(SRC_ROOT) not in sys.path:
 from gridpulse.demo import build_demo_workflow, demo_incident_options  # noqa: E402
 
 
+def _badge(st, label: str, tone: str = "neutral") -> None:
+    """Render a compact enterprise-style status pill."""
+
+    st.markdown(
+        f'<span class="gp-badge gp-badge-{tone}">{label}</span>',
+        unsafe_allow_html=True,
+    )
+
+
 def main() -> None:
     try:
         import streamlit as st
@@ -28,9 +32,39 @@ def main() -> None:
             "pip install -e '.[app]'"
         ) from error
 
-    st.set_page_config(page_title="GridPulse AI", page_icon="⚡", layout="wide")
-    st.title("⚡ GridPulse AI")
-    st.caption("Multimodal infrastructure-incident triage — demo decision support")
+    st.set_page_config(page_title="GridPulse AI", page_icon="G", layout="wide")
+    st.markdown(
+        """
+        <style>
+        .block-container { padding-top: 2.2rem; padding-bottom: 1rem; max-width: 1440px; }
+        /* Keep Streamlit's header, theme controls, and sidebar toggle available. */
+        [data-testid="stDeployButton"], [data-testid="stDeployButton"] button,
+        button[title="Deploy"], button[aria-label="Deploy"] { display: none !important; }
+        h1, h2, h3, h4 { letter-spacing: -0.02em; }
+        h1 { font-size: 2.35rem !important; margin-bottom: 0.15rem !important; }
+        h3 { margin-bottom: 0.25rem !important; }
+        [data-testid="stSidebar"] { border-right: 1px solid rgba(128, 128, 128, 0.18); }
+        [data-testid="stMetric"] { background: rgba(128, 128, 128, 0.06); border-radius: 0.7rem; padding: 0.65rem 0.85rem; }
+        div.stButton > button[kind="primary"], div.stButton > button[data-testid="stBaseButton-primary"] { background: #2563eb !important; border-color: #2563eb !important; color: #ffffff !important; }
+        div.stButton > button[kind="primary"]:hover, div.stButton > button[data-testid="stBaseButton-primary"]:hover { background: #1d4ed8 !important; border-color: #1d4ed8 !important; }
+        .gp-eyebrow { color: #6b7280; font-size: 0.76rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.25rem; }
+        .gp-subtitle { color: #6b7280; font-size: 1rem; margin-bottom: 1.4rem; }
+        .gp-badge { border-radius: 999px; display: inline-block; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.04em; padding: 0.28rem 0.68rem; text-transform: uppercase; }
+        .gp-badge-neutral { background: rgba(107, 114, 128, 0.14); color: #4b5563; }
+        .gp-badge-warning { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+        .gp-badge-success { background: #16a34a; color: #ffffff; }
+        .gp-badge-danger { background: #dc2626; color: #ffffff; }
+        .gp-footer { border-top: 1px solid rgba(128, 128, 128, 0.18); color: #6b7280; font-size: 0.74rem; margin-top: 2rem; padding-top: 0.9rem; }
+        [data-testid="stHorizontalBlock"]:has(.gp-top-card) [data-testid="stVerticalBlockBorderWrapper"] { min-height: 230px; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.title("GridPulse AI")
+    st.markdown(
+        '<div class="gp-subtitle">Multimodal infrastructure-incident triage for faster, evidence-backed decisions.</div>',
+        unsafe_allow_html=True,
+    )
 
     with st.sidebar:
         st.header("Incident input")
@@ -40,25 +74,31 @@ def main() -> None:
         image = st.file_uploader("Optional field photograph", type=["png", "jpg", "jpeg"])
         audio = st.file_uploader("Optional technician voice note", type=["wav", "mp3", "m4a"])
         run = st.button("Run investigation", type="primary", use_container_width=True)
-        st.divider()
-        st.info(
-            "This demo uses synthetic incident data and public-style fixtures. "
-            "It never controls infrastructure and requires human approval."
-        )
 
     if image is not None:
         st.image(image, caption="Uploaded field photograph", use_container_width=True)
 
     left, right = st.columns([1, 1])
     with left:
-        st.subheader("Incident")
-        st.write(f"**{incident.title}**")
-        st.write(incident.description)
-        st.metric("Severity", incident.severity.value.upper())
-        st.map(
-            [{"lat": incident.location.latitude, "lon": incident.location.longitude}],
-            zoom=10,
-        )
+        with st.container(border=True):
+            st.markdown('<span class="gp-top-card"></span>', unsafe_allow_html=True)
+            st.markdown("#### Incident overview")
+            st.write(f"**{incident.title}**")
+            st.write(incident.description)
+            severity_tone = "danger" if incident.severity.value in {"high", "critical"} else "warning"
+            st.caption("Severity")
+            _badge(st, incident.severity.value, severity_tone)
+
+        with st.container(border=True):
+            st.markdown("#### Incident location")
+            st.caption(
+                f"Asset {incident.asset_id} | {incident.location.latitude:.4f}, "
+                f"{incident.location.longitude:.4f}"
+            )
+            st.map(
+                [{"lat": incident.location.latitude, "lon": incident.location.longitude}],
+                zoom=10,
+            )
 
     if run:
         workflow = build_demo_workflow()
@@ -71,55 +111,70 @@ def main() -> None:
 
     result = st.session_state.get("last_result")
     with right:
-        st.subheader("Investigation status")
-        if result is None:
-            st.info("Choose an incident and click Run investigation.")
-        else:
-            report = result.state.report
-            if result.state.status == "awaiting_review":
-                st.warning("Awaiting human approval")
-            elif result.state.status == "approved":
-                st.success("Report approved by human reviewer")
-            elif result.state.status == "rejected":
-                st.error("Report rejected by human reviewer")
-            st.write(report.get("recommendation"))
-            if result.state.errors:
-                st.error("; ".join(result.state.errors))
+        with st.container(border=True):
+            st.markdown("#### Investigation status")
+            st.markdown('<span class="gp-top-card"></span>', unsafe_allow_html=True)
+            if result is None:
+                _badge(st, "Ready to run", "neutral")
+                st.write("Choose an incident and run the investigation to assemble evidence.")
+            else:
+                report = result.state.report
+                if result.state.status == "awaiting_review":
+                    _badge(st, "Awaiting review", "warning")
+                elif result.state.status == "approved":
+                    _badge(st, "Approved", "success")
+                elif result.state.status == "rejected":
+                    _badge(st, "Rejected", "danger")
+                st.write(report.get("recommendation"))
+                if result.state.errors:
+                    st.error("; ".join(result.state.errors))
 
-            if result.state.status == "awaiting_review":
-                approval_col, rejection_col = st.columns(2)
-                with approval_col:
-                    if st.button("Approve report", use_container_width=True):
-                        result.approve()
-                        st.rerun()
-                with rejection_col:
-                    rejection_reason = st.text_input("Rejection reason", key="rejection_reason")
-                    if st.button("Reject report", use_container_width=True):
-                        if rejection_reason.strip():
-                            result.reject(rejection_reason)
+                if result.state.status == "awaiting_review":
+                    approval_col, rejection_col = st.columns(2)
+                    with approval_col:
+                        if st.button("Approve report", use_container_width=True):
+                            result.approve()
                             st.rerun()
-                        st.error("A rejection reason is required.")
+                    with rejection_col:
+                        rejection_reason = st.text_input("Rejection reason", key="rejection_reason")
+                        if st.button("Reject report", use_container_width=True):
+                            if rejection_reason.strip():
+                                result.reject(rejection_reason)
+                                st.rerun()
+                            st.error("A rejection reason is required.")
 
     if result is not None:
         st.divider()
         evidence_col, hypothesis_col = st.columns(2)
         with evidence_col:
-            st.subheader("Observations and evidence")
-            for observation in result.state.observations:
-                st.write(
-                    f"**{observation.observation_type.value}** — {observation.value} "
-                    f"({observation.confidence:.0%})"
-                )
-            for evidence in result.state.evidence:
-                st.markdown(f"- [{evidence.title}, p. {evidence.source_page or '—'}]({evidence.source_uri})")
+            with st.container(border=True):
+                st.markdown("#### Observations and evidence")
+                for observation in result.state.observations:
+                    st.write(
+                        f"**{observation.observation_type.value}** - {observation.value} "
+                        f"({observation.confidence:.0%})"
+                    )
+                for evidence in result.state.evidence:
+                    st.markdown(
+                        f"- [{evidence.title}, p. {evidence.source_page or '-'}]({evidence.source_uri})"
+                    )
         with hypothesis_col:
-            st.subheader("Cause hypotheses")
-            for hypothesis in result.state.hypotheses:
-                st.write(f"**{hypothesis.cause}** — {hypothesis.status.value} ({hypothesis.confidence:.0%})")
-                st.caption(hypothesis.rationale)
+            with st.container(border=True):
+                st.markdown("#### Cause hypotheses")
+                for hypothesis in result.state.hypotheses:
+                    st.write(
+                        f"**{hypothesis.cause}** - {hypothesis.status.value} "
+                        f"({hypothesis.confidence:.0%})"
+                    )
+                    st.caption(hypothesis.rationale)
 
         with st.expander("Structured report"):
             st.json(result.state.report)
+
+    st.markdown(
+        '<div class="gp-footer">Demo decision support only | Uses synthetic incident data and public-style fixtures | Never controls infrastructure | Human approval required</div>',
+        unsafe_allow_html=True,
+    )
 
 
 if __name__ == "__main__":
