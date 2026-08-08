@@ -53,3 +53,7 @@ Added SQLite storage for incidents, reports, approval decisions, reviewer reason
 ## Current status
 
 The application runs locally without external service keys and includes deterministic sample data for testing. It supports custom incident inputs, optional local multimodal processing, and persistent local report history. It is ready for a controlled hosted trial with qualified users.
+
+## Phase 13: Report export
+
+Added downloadable PDF report generation for investigation results, including the incident summary, observations, evidence, hypotheses, review status, and optional saved field photograph.

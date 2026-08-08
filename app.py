@@ -16,6 +16,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from gridpulse.demo import build_demo_workflow, demo_incident_options  # noqa: E402
+from gridpulse.exports import report_to_pdf  # noqa: E402
 from gridpulse.intake import build_custom_incident  # noqa: E402
 from gridpulse.storage import SQLiteIncidentRepository  # noqa: E402
 
@@ -120,6 +121,14 @@ def _open_saved_report_dialog(st, saved_report) -> None:
         if image_path and Path(str(image_path)).exists():
             st.image(str(image_path), caption="Saved field photograph", use_container_width=True)
 
+        _download_report_buttons(
+            st,
+            report,
+            title=saved_report.incident_title,
+            image_path=str(image_path) if image_path else None,
+            key_prefix=f"saved-{saved_report.incident_id}",
+        )
+
         observations, evidence = st.columns(2)
         with observations:
             st.markdown("#### Observations")
@@ -155,6 +164,32 @@ def _open_saved_report_dialog(st, saved_report) -> None:
             st.json(report)
 
     show_report()
+
+
+def _download_report_buttons(
+    st,
+    report: dict[str, object],
+    *,
+    title: str,
+    image_path: str | None,
+    key_prefix: str,
+) -> None:
+    """Render the PDF download control."""
+
+    st.markdown("#### Download report")
+    try:
+        pdf = report_to_pdf(report, title=title, image_path=image_path)
+    except RuntimeError as error:
+        st.caption(str(error))
+    else:
+        st.download_button(
+            "Download PDF",
+            data=pdf,
+            file_name=f"{_safe_filename(title)}.pdf",
+            mime="application/pdf",
+            key=f"{key_prefix}-pdf",
+            use_container_width=True,
+        )
 
 
 def _evidence_markup(evidence) -> str:
@@ -450,6 +485,14 @@ def main() -> None:
 
         with st.expander("Structured report"):
             st.json(result.state.report)
+        live_report = st.session_state.get("last_persisted_report", result.state.report)
+        _download_report_buttons(
+            st,
+            live_report,
+            title=incident.title,
+            image_path=str(live_report.get("image_path")) if live_report.get("image_path") else None,
+            key_prefix=f"live-{incident.incident_id}",
+        )
 
     st.markdown(
         '<div class="gp-footer">Demo decision support only | Uses synthetic incident data and public-style fixtures | Never controls infrastructure | Human approval required</div>',

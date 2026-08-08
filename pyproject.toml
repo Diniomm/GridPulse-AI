@@ -32,6 +32,9 @@ vision = [
   "transformers>=4.45,<5",
   "pillow>=10,<12",
 ]
+export = [
+  "reportlab>=4,<5",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gridpulse"]

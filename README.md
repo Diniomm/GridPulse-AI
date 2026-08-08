@@ -95,6 +95,14 @@ Local investigations and review decisions are stored in `data/gridpulse.db`
 using SQLite. The database is ignored by Git and is intended for local use;
 hosted deployments need an external database if history must survive restarts.
 
+Optional report exports:
+
+```bash
+pip install -e ".[export]"
+```
+
+This enables a **Download PDF** button in the live and saved-report views.
+
 
 
 ## Deploy and operate
@@ -112,6 +120,7 @@ incident scenarios. The latest deterministic quality results are in
 - SQLite persistence for incidents, reports, approval decisions, and reviewer reasons
 - Saved report viewer with readable observations, evidence, hypotheses, and stored images
 - Confirmed deletion of saved reports and associated media files
+- Downloadable PDF reports with incident evidence and optional field photographs
 - Typed incident domain and bounded, auditable investigation workflow
 - Hybrid RAG with page-level citations and offline deterministic fallback
 - Multimodal image/audio adapters with safe provider failure behavior
@@ -125,3 +134,18 @@ photo and voice note, run an evidence-backed investigation, review the map and
 possible causes, inspect citations, and approve or reject the resulting report.
 Reports and uploaded media can be retained locally in SQLite-backed history or
 removed through the dashboard's deletion control.
+
+## External data potential
+
+The investigation pipeline is already structured to combine text, uploaded
+audio, uploaded images, maintenance guidance, and surrounding hazard data into
+one cited evidence record. The current public hazard clients and provider
+interfaces can be extended with live EIA telemetry, NASA FIRMS fire hotspots,
+outage feeds, and utility asset systems.
+
+With the relevant API keys and feed data configured, GridPulse can use real
+sources to analyze an incident, identify potential causes, find nearby hazards,
+and cite the evidence used in the report. The workflow and citation contracts
+are already implemented; each additional provider still needs its credentials,
+field mapping, rate limits, and data-quality rules configured for the target
+organization.
