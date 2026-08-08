@@ -106,8 +106,22 @@ incident scenarios. The latest deterministic quality results are in
 
 ## Product capabilities
 
+- Custom incident intake with title, description, asset ID, location, and severity
+- Optional local Whisper transcription for technician voice notes
+- Optional local Hugging Face image captioning for field photographs
+- SQLite persistence for incidents, reports, approval decisions, and reviewer reasons
+- Saved report viewer with readable observations, evidence, hypotheses, and stored images
+- Confirmed deletion of saved reports and associated media files
 - Typed incident domain and bounded, auditable investigation workflow
 - Hybrid RAG with page-level citations and offline deterministic fallback
 - Multimodal image/audio adapters with safe provider failure behavior
 - Evaluation gates for retrieval, abstention, prompt injection, contradictions, and review trajectory
 - CI checks that run without paid APIs or hosted infrastructure
+
+## Current workflow
+
+Users can select a demo incident or enter a custom incident, optionally upload a
+photo and voice note, run an evidence-backed investigation, review the map and
+possible causes, inspect citations, and approve or reject the resulting report.
+Reports and uploaded media can be retained locally in SQLite-backed history or
+removed through the dashboard's deletion control.

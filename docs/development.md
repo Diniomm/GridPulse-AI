@@ -34,6 +34,22 @@ Added automated checks for search quality, source coverage, incomplete informati
 
 Prepared the application for free hosting, added deployment and rollback instructions, configured the application theme, and documented the operational product scope.
 
+## Phase 9: Custom incident intake
+
+Added a form for entering custom incident titles, descriptions, asset IDs, coordinates, severity, and optional field files. Existing demo scenarios remain available.
+
+## Phase 10: Local audio transcription
+
+Added optional local Whisper transcription for uploaded technician voice notes. The application keeps a deterministic fallback when local transcription is disabled or unavailable.
+
+## Phase 11: Local image analysis
+
+Added optional local image captioning for uploaded field photographs. The application keeps a deterministic visual fallback for lightweight deployments.
+
+## Phase 12: Persistent local data
+
+Added SQLite storage for incidents, reports, approval decisions, reviewer reasons, saved media, and report history. Added a full saved-report viewer and confirmed deletion of stored reports and files.
+
 ## Current status
 
-The application runs locally without external service keys and includes deterministic sample data for testing. It is ready for a controlled hosted trial with qualified users.
+The application runs locally without external service keys and includes deterministic sample data for testing. It supports custom incident inputs, optional local multimodal processing, and persistent local report history. It is ready for a controlled hosted trial with qualified users.
