@@ -219,6 +219,7 @@ def main() -> None:
         .block-container { padding-top: 2.2rem; padding-bottom: 1rem; max-width: 1440px; }
         /* Keep Streamlit's header, theme controls, and sidebar toggle available. */
         [data-testid="stDeployButton"], [data-testid="stDeployButton"] button,
+        [data-testid="stAppDeployButton"], [data-testid="stAppDeployButton"] button,
         button[title="Deploy"], button[aria-label="Deploy"] { display: none !important; }
         h1, h2, h3, h4 { letter-spacing: -0.02em; }
         h1 { font-size: 2.35rem !important; margin-bottom: 0.15rem !important; }
