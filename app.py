@@ -12,6 +12,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from gridpulse.demo import build_demo_workflow, demo_incident_options  # noqa: E402
+from gridpulse.intake import build_custom_incident  # noqa: E402
 
 
 def _badge(st, label: str, tone: str = "neutral") -> None:
@@ -69,11 +70,45 @@ def main() -> None:
     with st.sidebar:
         st.header("Incident input")
         options = demo_incident_options()
-        incident_id = st.selectbox("Demo incident", list(options))
-        incident = options[incident_id]
-        image = st.file_uploader("Optional field photograph", type=["png", "jpg", "jpeg"])
-        audio = st.file_uploader("Optional technician voice note", type=["wav", "mp3", "m4a"])
-        run = st.button("Run investigation", type="primary", use_container_width=True)
+        input_mode = st.radio("Input mode", ["Demo incident", "Custom incident"])
+        incident = None
+        if input_mode == "Demo incident":
+            incident_id = st.selectbox("Demo incident", list(options))
+            incident = options[incident_id]
+            image = st.file_uploader("Optional field photograph", type=["png", "jpg", "jpeg"])
+            audio = st.file_uploader("Optional technician voice note", type=["wav", "mp3", "m4a"])
+            run = st.button("Run investigation", type="primary", use_container_width=True)
+        else:
+            incident = st.session_state.get("custom_incident")
+            with st.form("custom_incident_form"):
+                custom_title = st.text_input("Incident title")
+                custom_description = st.text_area("What happened?", height=100)
+                custom_asset = st.text_input("Asset ID", placeholder="POLE-900")
+                custom_latitude = st.number_input("Latitude", min_value=-90.0, max_value=90.0, value=39.0997, format="%.4f")
+                custom_longitude = st.number_input("Longitude", min_value=-180.0, max_value=180.0, value=-94.5786, format="%.4f")
+                custom_severity = st.selectbox("Severity", ["low", "medium", "high", "critical"], index=1)
+                image = st.file_uploader("Optional field photograph", type=["png", "jpg", "jpeg"])
+                audio = st.file_uploader("Optional technician voice note", type=["wav", "mp3", "m4a"])
+                run = st.form_submit_button("Run investigation", type="primary", use_container_width=True)
+            if run:
+                try:
+                    incident = build_custom_incident(
+                        title=custom_title,
+                        description=custom_description,
+                        asset_id=custom_asset,
+                        latitude=custom_latitude,
+                        longitude=custom_longitude,
+                        severity=custom_severity,
+                    )
+                    st.session_state["custom_incident"] = incident
+                except ValueError as error:
+                    st.error(str(error))
+            elif not (custom_title.strip() and custom_description.strip() and custom_asset.strip()):
+                st.caption("Complete the fields above, then submit the form to continue.")
+
+    if incident is None:
+        st.info("Complete the custom incident fields in the sidebar to view the investigation workspace.")
+        return
 
     if image is not None:
         st.image(image, caption="Uploaded field photograph", use_container_width=True)
