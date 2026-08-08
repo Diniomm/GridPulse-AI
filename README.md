@@ -49,4 +49,11 @@ Initial verification (dependency-free smoke and domain tests):
 python -m unittest discover -s tests -v
 ```
 
+Optional dashboard:
+
+```bash
+pip install -e ".[app]"
+streamlit run app.py
+```
+
 Secrets belong in `.env` or the deployment platform's secret manager. Never commit live API keys.
