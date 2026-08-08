@@ -103,7 +103,11 @@ pip install -e ".[export]"
 
 This enables a **Download PDF** button in the live and saved-report views.
 
+## Live Demo 
 
+[Open GridPulse AI](https://gridpulse-ai-tool.streamlit.app)
+
+> This public demo uses synthetic incident data and should not be used for real operational decisions.
 
 ## Deploy and operate
 
