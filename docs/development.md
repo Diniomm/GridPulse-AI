@@ -1,6 +1,6 @@
 # Development Summary
 
-GridPulse was built in eight focused phases. Each phase added one part of the product and was checked before the next phase began.
+GridPulse was built in thirteen focused phases. Each phase added one part of the product and was checked before the next phase began.
 
 ## Phase 1: Project foundation
 
@@ -50,10 +50,11 @@ Added optional local image captioning for uploaded field photographs. The applic
 
 Added SQLite storage for incidents, reports, approval decisions, reviewer reasons, saved media, and report history. Added a full saved-report viewer and confirmed deletion of stored reports and files.
 
-## Current status
-
-The application runs locally without external service keys and includes deterministic sample data for testing. It supports custom incident inputs, optional local multimodal processing, and persistent local report history. It is ready for a controlled hosted trial with qualified users.
-
 ## Phase 13: Report export
 
 Added downloadable PDF report generation for investigation results, including the incident summary, observations, evidence, hypotheses, review status, and optional saved field photograph.
+
+
+## Current status
+
+The application runs locally without external service keys and includes deterministic sample data for testing. It supports custom incident inputs, optional local multimodal processing, and persistent local report history. It is ready for a controlled hosted trial with qualified users.
