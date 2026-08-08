@@ -66,7 +66,7 @@ pip install -e ".[app]"
 streamlit run app.py
 ```
 
-Secrets belong in `.env` or the deployment platform's secret manager. Never commit live API keys.
+
 
 ## Deploy and operate
 
