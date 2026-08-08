@@ -1,6 +1,6 @@
 # GridPulse AI
 
-GridPulse is a zero-cost, portfolio-grade MVP for multimodal infrastructure-incident triage. It combines field reports, photographs, public hazard data, equipment manuals, and a bounded agent workflow to produce evidence-backed incident briefs for human review.
+GridPulse AI is an early-stage operational decision-support product for electric utility teams. It combines field reports, photographs, public hazard data, equipment manuals, and a bounded investigation workflow to produce evidence-backed incident briefs for human review.
 
 ## MVP promise
 
@@ -13,7 +13,7 @@ Given an incident location, description, and optional photograph or voice note, 
 5. abstain when evidence is insufficient; and
 6. require human approval before a brief is marked actionable.
 
-GridPulse is a portfolio demonstration. It is not a safety-certified system and must not control infrastructure or replace approved utility procedures.
+GridPulse is an experimental product release and is not safety-certified. It must not control infrastructure, issue dispatch commands, or replace approved utility procedures. Every recommendation requires qualified human review.
 
 ## Zero-cost stack
 
@@ -68,15 +68,14 @@ streamlit run app.py
 
 Secrets belong in `.env` or the deployment platform's secret manager. Never commit live API keys.
 
-## Deploy and demo
+## Deploy and operate
 
 The app is ready for a zero-cost Streamlit Community Cloud deployment. Follow
-the [deployment guide](docs/deployment.md), then use the three demo scenarios
-to show hazard correlation, cited manual retrieval, multimodal evidence, and
-human approval gating. The latest deterministic quality results are in
+the [deployment guide](docs/deployment.md), then verify the three included
+incident scenarios. The latest deterministic quality results are in
 [evaluation-report.md](evaluation-report.md).
 
-### Portfolio talking points
+## Product capabilities
 
 - Typed incident domain and bounded, auditable investigation workflow
 - Hybrid RAG with page-level citations and offline deterministic fallback
