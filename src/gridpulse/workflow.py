@@ -102,7 +102,7 @@ class InvestigationWorkflow:
                 state.observations.append(
                     self.media.observation_from_audio(audio_path, incident_id=state.incident.incident_id)
                 )
-        except (OSError, ValueError) as error:
+        except (OSError, RuntimeError, ValueError) as error:
             state.errors.append(f"Media processing failed: {error}")
 
     def _correlate_hazards(self, state: InvestigationState) -> None:

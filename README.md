@@ -66,6 +66,20 @@ pip install -e ".[app]"
 streamlit run app.py
 ```
 
+Optional local audio transcription:
+
+```bash
+pip install -e ".[audio]"
+GRIDPULSE_USE_LOCAL_WHISPER=true streamlit run app.py
+```
+
+Without this optional dependency and environment setting, the application uses
+the clearly labeled deterministic audio fallback.
+
+The `tiny` model is useful for a quick test but may mishear asset IDs and
+technical terms. Use `GRIDPULSE_WHISPER_MODEL=base` for better local accuracy
+when your computer has enough memory and processing time.
+
 
 
 ## Deploy and operate

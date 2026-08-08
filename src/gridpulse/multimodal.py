@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,6 +17,49 @@ class VisionProvider:
 class SpeechProvider:
     def transcribe(self, audio_path: str | Path, *, incident_id: str) -> str:
         raise NotImplementedError
+
+
+class WhisperSpeechProvider(SpeechProvider):
+    """Optional local Whisper transcription provider.
+
+    The model is imported and loaded lazily so the default demo remains
+    dependency-free. Set ``GRIDPULSE_USE_LOCAL_WHISPER=true`` to opt in.
+    """
+
+    def __init__(self, model_size: str | None = None) -> None:
+        self.model_size = model_size or os.getenv("GRIDPULSE_WHISPER_MODEL", "base")
+        self._model = None
+
+    def transcribe(self, audio_path: str | Path, *, incident_id: str) -> str:
+        try:
+            import whisper
+        except ImportError as error:
+            raise RuntimeError(
+                "Local Whisper is not installed. Install the audio extra or disable "
+                "GRIDPULSE_USE_LOCAL_WHISPER."
+            ) from error
+        if self._model is None:
+            self._model = whisper.load_model(self.model_size)
+        prompt = os.getenv(
+            "GRIDPULSE_WHISPER_PROMPT",
+            "Utility field note. Asset ID POLE-900. Pole, crossarm, transformer, conductor, "
+            "substation, access road, and qualified crew.",
+        )
+        result = self._model.transcribe(
+            str(audio_path), fp16=False, language="en", initial_prompt=prompt
+        )
+        transcript = str(result.get("text", "")).strip()
+        if not transcript:
+            raise RuntimeError("Whisper returned an empty transcript")
+        return transcript
+
+
+def build_speech_provider() -> SpeechProvider:
+    """Select local Whisper only when explicitly enabled; otherwise use fallback."""
+
+    if os.getenv("GRIDPULSE_USE_LOCAL_WHISPER", "false").lower() in {"1", "true", "yes"}:
+        return WhisperSpeechProvider()
+    return DemoSpeechProvider()
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,7 +114,7 @@ class MediaProcessor:
         speech: SpeechProvider | None = None,
     ) -> None:
         self.vision = vision or DemoVisionProvider()
-        self.speech = speech or DemoSpeechProvider()
+        self.speech = speech or build_speech_provider()
 
     def observations_from_image(self, image_path: str | Path, *, incident_id: str) -> tuple[Observation, ...]:
         return self.vision.analyze(image_path, incident_id=incident_id)
@@ -83,4 +127,3 @@ class MediaProcessor:
             source=str(audio_path),
             confidence=0.8,
         )
-

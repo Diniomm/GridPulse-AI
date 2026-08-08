@@ -25,6 +25,9 @@ ai = [
 app = [
   "streamlit>=1.40,<2",
 ]
+audio = [
+  "openai-whisper>=20231117",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gridpulse"]

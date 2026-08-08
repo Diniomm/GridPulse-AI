@@ -10,7 +10,7 @@ Add a form for entering an incident title, description, asset, location, severit
 
 ## Phase 10: Local audio transcription
 
-Replace the synthetic audio note with optional local Whisper transcription. If the model or required hardware is unavailable, retain the current clearly labeled fallback.
+Replace the synthetic audio note with optional local Whisper transcription. Install `pip install -e ".[audio]"` and set `GRIDPULSE_USE_LOCAL_WHISPER=true` to enable it. If the model or required hardware is unavailable, retain the current clearly labeled fallback.
 
 **Exit gate:** A supported audio file produces a transcript locally, and provider failures do not break the investigation.
 

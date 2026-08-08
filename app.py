@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -22,6 +24,28 @@ def _badge(st, label: str, tone: str = "neutral") -> None:
         f'<span class="gp-badge gp-badge-{tone}">{label}</span>',
         unsafe_allow_html=True,
     )
+
+
+def _save_upload(upload) -> str | None:
+    """Save a Streamlit upload to a temporary path for provider adapters."""
+
+    if upload is None:
+        return None
+    suffix = Path(upload.name).suffix or ".bin"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix="gridpulse-") as handle:
+        handle.write(upload.getvalue())
+        return handle.name
+
+
+def _evidence_markup(evidence) -> str:
+    """Render a citation link only when its source can open in a browser."""
+
+    page = f", p. {evidence.source_page}" if evidence.source_page else ""
+    label = f"{evidence.title}{page}"
+    source = evidence.source_uri
+    if source.startswith(("http://", "https://")):
+        return f"- [{label}]({source})"
+    return f"- {label} — `{source}`"
 
 
 def main() -> None:
@@ -137,11 +161,18 @@ def main() -> None:
 
     if run:
         workflow = build_demo_workflow()
-        result = workflow.run(
-            incident,
-            image_path=image.name if image is not None else "storm-pole.jpg",
-            audio_path=audio.name if audio is not None else "storm-pole.wav",
-        )
+        if audio is not None:
+            audio_path = _save_upload(audio)
+        elif os.getenv("GRIDPULSE_USE_LOCAL_WHISPER", "false").lower() in {"1", "true", "yes"}:
+            audio_path = None
+        else:
+            audio_path = "storm-pole.wav"
+        with st.spinner("Extracting audio details, correlating hazards, and assembling evidence..."):
+            result = workflow.run(
+                incident,
+                image_path=image.name if image is not None else "storm-pole.jpg",
+                audio_path=audio_path,
+            )
         st.session_state["last_result"] = result
 
     result = st.session_state.get("last_result")
@@ -190,9 +221,7 @@ def main() -> None:
                         f"({observation.confidence:.0%})"
                     )
                 for evidence in result.state.evidence:
-                    st.markdown(
-                        f"- [{evidence.title}, p. {evidence.source_page or '-'}]({evidence.source_uri})"
-                    )
+                    st.markdown(_evidence_markup(evidence))
         with hypothesis_col:
             with st.container(border=True):
                 st.markdown("#### Cause hypotheses")
