@@ -41,7 +41,7 @@ gridpulse/
 
 ## Development
 
-The repository contains focused documentation for evaluation, safety, and deployment in the `docs/` directory.
+See the [development summary](docs/development.md) for a simple overview of the work completed in each phase.
 
 Initial verification (dependency-free smoke and domain tests):
 
