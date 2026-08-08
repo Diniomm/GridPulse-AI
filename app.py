@@ -159,6 +159,7 @@ def main() -> None:
                 zoom=10,
             )
 
+    loading_slot = right.empty()
     if run:
         workflow = build_demo_workflow()
         if audio is not None:
@@ -167,12 +168,20 @@ def main() -> None:
             audio_path = None
         else:
             audio_path = "storm-pole.wav"
-        with st.spinner("Extracting audio details, correlating hazards, and assembling evidence..."):
-            result = workflow.run(
-                incident,
-                image_path=image.name if image is not None else "storm-pole.jpg",
-                audio_path=audio_path,
-            )
+        if image is not None:
+            image_path = _save_upload(image)
+        elif os.getenv("GRIDPULSE_USE_LOCAL_VISION", "false").lower() in {"1", "true", "yes"}:
+            image_path = None
+        else:
+            image_path = "storm-pole.jpg"
+        with loading_slot.container():
+            st.markdown("#### Investigation in progress")
+            st.caption("Extracting audio details, analyzing the image, and assembling evidence.")
+            progress = st.progress(8, text="Preparing local providers...")
+            progress.progress(20, text="Loading local models...")
+            result = workflow.run(incident, image_path=image_path, audio_path=audio_path)
+            progress.progress(100, text="Investigation complete")
+        loading_slot.empty()
         st.session_state["last_result"] = result
 
     result = st.session_state.get("last_result")

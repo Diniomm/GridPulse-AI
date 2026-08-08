@@ -16,7 +16,7 @@ Replace the synthetic audio note with optional local Whisper transcription. Inst
 
 ## Phase 11: Local image analysis
 
-Add an optional local image model for field-photo observations. Keep the provider behind the existing interface and retain a deterministic fallback for lightweight deployments.
+Add an optional local image model for field-photo observations. Install `pip install -e ".[vision]"` and set `GRIDPULSE_USE_LOCAL_VISION=true` to enable it. Keep the provider behind the existing interface and retain a deterministic fallback for lightweight deployments.
 
 **Exit gate:** A supported image produces a labeled observation locally, with model failures recorded safely.
 

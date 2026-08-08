@@ -28,6 +28,10 @@ app = [
 audio = [
   "openai-whisper>=20231117",
 ]
+vision = [
+  "transformers>=4.45,<5",
+  "pillow>=10,<12",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gridpulse"]

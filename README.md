@@ -80,6 +80,17 @@ The `tiny` model is useful for a quick test but may mishear asset IDs and
 technical terms. Use `GRIDPULSE_WHISPER_MODEL=base` for better local accuracy
 when your computer has enough memory and processing time.
 
+Optional local image analysis:
+
+```bash
+pip install -e ".[vision]"
+GRIDPULSE_USE_LOCAL_VISION=true streamlit run app.py
+```
+
+The vision model generates a caption for an uploaded field photo. Without the
+optional dependency and environment setting, the application uses its clearly
+labeled deterministic visual fallback.
+
 
 
 ## Deploy and operate
